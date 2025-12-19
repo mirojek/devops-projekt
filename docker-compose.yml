@@ -1,4 +1,4 @@
-version: "3.9"
+
 
 services:
   app:
@@ -7,13 +7,26 @@ services:
       dockerfile: Dockerfile
       target: final
     container_name: devops-app
-    ports:
-      - "5000:5000"
+    expose:
+      - "5000"
     networks:
       - front_net
       - back_net
     depends_on:
       - db
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: devops-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - app
+    networks:
+      - front_net
 
   db:
     image: postgres:16
@@ -33,3 +46,4 @@ networks:
 
 volumes:
   db_data:
+  nginx_logs:
