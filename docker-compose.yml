@@ -66,6 +66,20 @@ services:
       - back_net
     restart: "no"
 
+  migration_runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: final
+    container_name: devops-migrations
+    depends_on:
+      - db
+    working_dir: /app/app
+    command: ["python", "-m", "migrations.run_migrations"]
+    networks:
+      - back_net
+    restart: "no"
+
 networks:
   front_net:
   back_net:
