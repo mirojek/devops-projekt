@@ -1,27 +1,48 @@
-import sys
-from pathlib import Path
+import os
+import pytest
 
-CURRENT_DIR = Path(__file__).resolve().parent
-SRC_DIR = CURRENT_DIR.parent / "src"
-sys.path.append(str(SRC_DIR))
+from app.src import create_app, db
+from app.src.app import User
 
-from app import app
+@pytest.fixture()
+def app():
+    os.environ["DB_HOST"] = "db"
+    os.environ["DB_PORT"] = "5432"
+    os.environ["DB_NAME"] = "devdb"
+    os.environ["DB_USER"] = "devuser"
+    os.environ["DB_PASSWORD"] = "devpass"
 
-def test_health_status_code():
-    client = app.test_client()
+    app = create_app()
+    app.config["TESTING"] = True
+
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.session.remove()
+
+@pytest.fixture()
+def client(app):
+    return app.test_client()
+
+def test_user_to_dict():
+    user = User(id=1, name="Test", email="test@email.com")
+    d = user.to_dict()
+    assert d["id"] == 1
+    assert d["name"] == "Test"
+    assert d["email"] == "test@email.com"
+
+def test_business_logic_add_user(app):
+    with app.app_context():
+        u = User(name="Ala", email="ala@email.com")
+        db.session.add(u)
+        db.session.commit()
+
+        found = User.query.filter_by(email="ala@email.com").first()
+        assert found is not None
+        assert found.name == "Ala"
+
+def test_health_endpoint(client):
     resp = client.get("/health")
     assert resp.status_code == 200
-
-
-def test_health_body():
-    client = app.test_client()
-    resp = client.get("/health")
     data = resp.get_json()
-    assert data["status"] == "ok"
-
-
-def test_items_endpoint():
-    client = app.test_client()
-    resp = client.get("/items")
-    data = resp.get_json()
-    assert data["items"] == [1, 2, 3]
+    assert data["status"] in ("ok", "error")

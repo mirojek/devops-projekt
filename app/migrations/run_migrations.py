@@ -7,5 +7,6 @@ def run():
         db.create_all()
         print("Migrations: tables created")
 
+
 if __name__ == "__main__":
     run()
