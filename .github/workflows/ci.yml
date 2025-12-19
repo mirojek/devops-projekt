@@ -7,3 +7,35 @@ on:
   pull_request:
     branches:
       - main
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          cd app
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run pytest
+        run: |
+          cd app
+          pytest
+
+      - name: Build Docker image (final)
+        run: |
+          docker build \
+            --target final \
+            -t devops-app-ci \
+            .
