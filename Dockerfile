@@ -4,27 +4,36 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    && rm -rf /var/lib/apt/lists/*
+    libpq-dev \
+ && rm -rf /var/lib/apt/lists/*
 
-COPY app/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY app/requirements.txt /app/requirements.txt
 
-COPY app/src ./src
-COPY app/tests ./tests
+RUN pip install --upgrade pip && \
+    pip install --prefix=/install -r /app/requirements.txt
 
-FROM builder AS test
+COPY app /app/app
+
+FROM python:3.12-slim AS test
 
 WORKDIR /app
-RUN pytest tests
+
+COPY --from=builder /install /usr/local
+COPY app /app/app
+
+WORKDIR /app/app
+
+RUN pytest || (echo "Tests failed" && exit 1)
 
 FROM python:3.12-slim AS final
 
 WORKDIR /app
 
-COPY --from=builder /usr/local/lib/python3.12 /usr/local/lib/python3.12
-COPY --from=builder /usr/local/bin /usr/local/bin
-COPY --from=builder /app/src ./src
+COPY --from=builder /install /usr/local
+COPY app /app/app
 
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+WORKDIR /app/app
 
 CMD ["python", "-m", "src.app"]

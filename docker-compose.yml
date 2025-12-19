@@ -43,6 +43,29 @@ services:
     networks:
       - back_net
 
+  seed_runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: final
+    container_name: devops-seed
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: devdb
+      DB_USER: devuser
+      DB_PASSWORD: devpass
+      SEED_OUTPUT_DIR: /seed_output
+    working_dir: /app/app
+    command: ["python", "-m", "app.seed.run_seed"]
+    volumes:
+      - seed_output:/seed_output
+    networks:
+      - back_net
+    restart: "no"
+
 networks:
   front_net:
   back_net:
@@ -50,3 +73,4 @@ networks:
 volumes:
   db_data:
   nginx_logs:
+  seed_output:
