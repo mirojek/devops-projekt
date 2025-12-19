@@ -1,16 +1,17 @@
 import os
+import sys
 import pytest
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 from app.src import create_app, db
 from app.src.app import User
 
 @pytest.fixture()
 def app():
-    os.environ["DB_HOST"] = "db"
-    os.environ["DB_PORT"] = "5432"
-    os.environ["DB_NAME"] = "devdb"
-    os.environ["DB_USER"] = "devuser"
-    os.environ["DB_PASSWORD"] = "devpass"
+    os.environ["USE_SQLITE_FOR_TESTS"] = "1"
 
     app = create_app()
     app.config["TESTING"] = True
@@ -19,6 +20,8 @@ def app():
         db.create_all()
         yield app
         db.session.remove()
+
+    os.environ.pop("USE_SQLITE_FOR_TESTS", None)
 
 @pytest.fixture()
 def client(app):
